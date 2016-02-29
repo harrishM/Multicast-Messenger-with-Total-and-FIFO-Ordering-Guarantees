@@ -25,7 +25,7 @@ public class Ordering {
     private static final ConcurrentHashMap<UUID, Set<Proposal>> proposals = new ConcurrentHashMap<>();
 
     private static final AtomicInteger sequence = new AtomicInteger(0);
-    private static final AtomicInteger agreedSequence = new AtomicInteger(-1);
+    private static final AtomicInteger agreedSequence = new AtomicInteger(0);
 
 
     public Ordering(GroupMessenger messenger) {
@@ -33,7 +33,6 @@ public class Ordering {
     }
 
     public void handle(Payload in) {
-        updateSequence(in.getAgreedSequence());
         switch (in.getType()) {
             case INITIAL_MESSAGE: {
                 String fromNode = in.getFromNode();
@@ -41,7 +40,7 @@ public class Ordering {
                 in.toProposal(proposedSequence, messenger.myPort());
                 new ClientTask(messenger, fromNode).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, in);
 
-                queue.add(new BufferedMessage(proposedSequence, in.getId(), GroupMessenger.pid(fromNode), in.getMessage(), messenger.myPid()));
+                queue.offer(new BufferedMessage(proposedSequence, in.getId(), GroupMessenger.pid(fromNode), in.getMessage(), messenger.myPid()));
                 Log.d(TAG, "INITIAL_MESSAGE: Queue: " + queue);
                 break;
             }
@@ -59,13 +58,15 @@ public class Ordering {
             case SEQUENCE_AGREEMENT: {
                 Log.d(TAG, "SEQUENCE_AGREEMENT:B: Queue: " + queue);
 //                sequence.set(Math.max(sequence.get(),(int) in.getAgreedSequence()));
+//                updateSequence(in.getAgreedSequence());
 
                 for (BufferedMessage m : queue) {
                     if (m.getId().equals(in.getId())) {
-                        m.setSequence(agreedSequence.incrementAndGet());
+                        queue.remove(m);
+                        m.setSequence(in.getAgreedSequence());
                         m.setStatus(BufferedMessage.Status.DELIVERABLE);
+                        queue.offer(m);
                     }
-
                 }
                 while (queue.peek() != null && queue.peek().getStatus() == BufferedMessage.Status.DELIVERABLE) {
                     BufferedMessage message = queue.poll();
@@ -96,7 +97,7 @@ public class Ordering {
 
     private void persist(BufferedMessage msg) {
         ContentValues contentValues = new ContentValues();
-        contentValues.put("key", String.valueOf((int )msg.getSequence()));
+        contentValues.put("key", String.valueOf(agreedSequence.getAndIncrement()));
         contentValues.put("value", msg.getMessage());
         messenger.getContentResolver().insert(messenger.contentProviderUri(), contentValues);
     }
