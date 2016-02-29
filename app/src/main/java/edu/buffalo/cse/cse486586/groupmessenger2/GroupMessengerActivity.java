@@ -68,7 +68,7 @@ public class GroupMessengerActivity extends Activity {
             public void onClick(View v) {
                 String msg = editText.getText().toString() + "\n";
                 editText.setText("");
-                new ClientTask(messenger).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
+                new ClientTask(messenger, GroupMessenger.nodes()).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
                         Payload.newMessage(msg, messenger.myPort()));
             }
         });

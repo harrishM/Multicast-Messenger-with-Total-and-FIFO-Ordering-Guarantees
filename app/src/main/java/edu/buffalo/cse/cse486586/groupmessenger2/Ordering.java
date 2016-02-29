@@ -4,15 +4,16 @@ import android.content.ContentValues;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Math.max;
 
@@ -25,41 +26,45 @@ public class Ordering {
 
     private static final ConcurrentHashMap<UUID, Set<Proposal>> proposals = new ConcurrentHashMap<>();
 
-    private static AtomicInteger messageCount = new AtomicInteger(0);
-    private static int largestAgreedSequence = -1;
-    private static int largestProposedSequence = -1;
+    private static volatile int largestAgreedSequence = -1;
+    private static volatile int largestProposedSequence = -1;
 
     public Ordering(GroupMessenger messenger) {
         this.messenger = messenger;
     }
 
-    public synchronized void handle(Payload in) {
+    public void handle(Payload in) {
         switch (in.getType()) {
             case INITIAL_MESSAGE: {
-                Log.d(TAG, "INITIAL_MESSAGE: " + in);
+//                Log.d(TAG, "INITIAL_MESSAGE: " + in);
                 int proposedSequence = proposeSequence();
                 Payload out = Payload.newProposal(in.getId(), proposedSequence, messenger.myPort());
-                new ClientTask(messenger).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, out);
+                new ClientTask(messenger, toList(in.getFromNode())).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, out);
 
                 queue.add(new BufferedMessage(in.getId(), proposedSequence, in.getMessage()));
+                Log.d(TAG, "INITIAL_MESSAGE: Queue: " + queue);
                 break;
             }
             case SEQUENCE_PROPOSAL: {
                 int proposalCount = addToProposals(new Proposal(in.getId(), in.getFromNode(), in.getProposedSequence()));
 
-                Log.d(TAG, proposalCount + "'th SEQUENCE_PROPOSAL for: " + in.getMessage()
-                        + " from:" + in.getFromNode() + " sequence:" + in.getProposedSequence());
+//                Log.d(TAG, proposalCount + "'th SEQUENCE_PROPOSAL for: " + in.getId()
+//                        + " from:" + in.getFromNode() + " sequence:" + in.getProposedSequence());
                 if (proposalCount >= (GroupMessenger.nodes().size() - OFFLINE_NODES.size())) {
+                    Log.d(TAG, "PROPOSALS: " + proposals);
                     Payload out = Payload.newAgreement(in.getId(), largestSequenceFor(in.getId()), messenger.myPort());
-                    new ClientTask(messenger).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, out);
+                    new ClientTask(messenger, GroupMessenger.nodes()).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, out);
                 }
+//                Log.d(TAG, "SEQUENCE_PROPOSAL: Queue: " + queue);
                 break;
             }
             case SEQUENCE_AGREEMENT: {
                 largestAgreedSequence = Math.max(largestAgreedSequence, in.getAgreedSequence());
+                Log.d(TAG, "largestAgreedSequence: " + largestAgreedSequence);
 
-                Log.d(TAG, "SEQUENCE_AGREEMENT for: " + in.getMessage()
-                        + " from:" + in.getFromNode() + " sequence:" + in.getAgreedSequence());
+//                Log.d(TAG, "SEQUENCE_AGREEMENT for: " + in.getId()
+//                        + " from:" + in.getFromNode() + " sequence:" + in.getAgreedSequence());
+                Log.d(TAG, "SEQUENCE_AGREEMENT:B: Queue: " + queue);
 
                 for (BufferedMessage m : queue) {
                     if (m.getId().equals(in.getId())) {
@@ -74,9 +79,16 @@ public class Ordering {
                         persist(message);
                     }
                 }
+                Log.d(TAG, "SEQUENCE_AGREEMENT:A: Queue: " + queue);
                 break;
             }
         }
+    }
+
+    private List<String> toList(String fromNode) {
+        List<String> l = new ArrayList<>(1);
+        l.add(fromNode);
+        return l;
     }
 
     private int addToProposals(Proposal proposal) {
@@ -100,18 +112,19 @@ public class Ordering {
         messenger.getContentResolver().insert(messenger.contentProviderUri(), contentValues);
     }
 
-    private synchronized int largestSequenceFor(UUID id) {
+    private int largestSequenceFor(UUID id) {
         int max = Integer.MIN_VALUE;
         if (proposals.containsKey(id)) {
             for (Proposal p : proposals.get(id)) {
-                max = Math.max(max, p.proposedSequence);
+                max = max(max, p.proposedSequence);
             }
         }
         return max;
     }
 
-    private synchronized int proposeSequence() {
+    private int proposeSequence() {
         largestProposedSequence = max(largestAgreedSequence, largestProposedSequence) + 1;
+        Log.d(TAG, "largestProposedSequence: " + largestProposedSequence);
         return largestProposedSequence;
     }
 
@@ -145,6 +158,15 @@ public class Ordering {
         @Override
         public int hashCode() {
             return Objects.hash(id, fromNode, proposedSequence);
+        }
+
+        @Override
+        public String toString() {
+            return "Proposal{" +
+                    "id=" + id +
+                    ", fromNode='" + fromNode + '\'' +
+                    ", proposedSequence=" + proposedSequence +
+                    '}';
         }
     }
 }
