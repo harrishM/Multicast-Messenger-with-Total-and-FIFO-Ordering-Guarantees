@@ -4,22 +4,41 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class BufferedMessage implements Comparable<BufferedMessage> {
-    private int sequence;
+    private float sequence;
     private UUID id;
+    private int fromPid;
+    private int agreedPid;
     private String message;
-    private boolean isAgreed = false;
+    private Status status = Status.UNDELIVERABLE;
 
-    public BufferedMessage(UUID id, int sequence, String message) {
-        this.id = id;
+    public enum Status {
+        DELIVERABLE, UNDELIVERABLE
+    }
+
+    public BufferedMessage(float sequence, UUID id, int fromPid, String message, int agreedPid) {
         this.sequence = sequence;
+        this.id = id;
+        this.fromPid = fromPid;
+        this.agreedPid = agreedPid;
         this.message = message;
     }
 
-    public String getMessage() {
-        return message;
+    @Override
+    public int compareTo(BufferedMessage another) {
+        int compare = Float.compare(sequence, another.sequence);
+        if (compare == 0) {
+            if (status == Status.UNDELIVERABLE && another.status == Status.DELIVERABLE) {
+                return -1;
+            } else if (status == Status.DELIVERABLE && another.status == Status.UNDELIVERABLE) {
+                return 1;
+            } else {
+                return Integer.compare(agreedPid, another.agreedPid);
+            }
+        }
+        return compare;
     }
 
-    public int getSequence() {
+    public float getSequence() {
         return sequence;
     }
 
@@ -27,21 +46,44 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         return id;
     }
 
-    public void markAgreed() {
-        this.isAgreed = true;
+    public int getAgreedPid() {
+        return agreedPid;
     }
 
-    public void setSequence(int sequence) {
+    public String getMessage() {
+        return message;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setSequence(float sequence) {
         this.sequence = sequence;
     }
 
-    public boolean isAgreed() {
-        return isAgreed;
+    public void setId(UUID id) {
+        this.id = id;
     }
 
-    @Override
-    public int compareTo(BufferedMessage another) {
-        return Integer.compare(sequence, another.sequence);
+    public void setAgreedPid(int agreedPid) {
+        this.agreedPid = agreedPid;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public int getFromPid() {
+        return fromPid;
+    }
+
+    public void setFromPid(int fromPid) {
+        this.fromPid = fromPid;
     }
 
     @Override
@@ -50,14 +92,16 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         if (o == null || getClass() != o.getClass()) return false;
         BufferedMessage that = (BufferedMessage) o;
         return Objects.equals(sequence, that.sequence) &&
-                Objects.equals(isAgreed, that.isAgreed) &&
                 Objects.equals(id, that.id) &&
-                Objects.equals(message, that.message);
+                Objects.equals(fromPid, that.fromPid) &&
+                Objects.equals(agreedPid, that.agreedPid) &&
+                Objects.equals(message, that.message) &&
+                Objects.equals(status, that.status);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sequence, id, message, isAgreed);
+        return Objects.hash(sequence, id, fromPid, agreedPid, message, status);
     }
 
     @Override
@@ -65,8 +109,10 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         return "BufferedMessage{" +
                 "sequence=" + sequence +
                 ", id=" + id +
+                ", fromPid=" + fromPid +
+                ", agreedPid=" + agreedPid +
                 ", message='" + message + '\'' +
-                ", isAgreed=" + isAgreed +
+                ", status=" + status +
                 '}';
     }
 }

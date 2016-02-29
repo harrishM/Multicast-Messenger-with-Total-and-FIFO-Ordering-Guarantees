@@ -5,8 +5,9 @@ import android.content.Context;
 import android.net.Uri;
 import android.telephony.TelephonyManager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class GroupMessenger extends Application {
     private static final String TAG = GroupMessenger.class.getName();
@@ -15,16 +16,16 @@ public class GroupMessenger extends Application {
 
 
     private static final int SERVER_PORT = 10000;
-    private static final List<String> NODES;
+    private static final Map<String, Integer> NODES; // <port,  pid>
     private String myPort;
 
     static {
-        NODES = new ArrayList<>(5);
-        NODES.add("11108");
-        NODES.add("11112");
-        NODES.add("11116");
-        NODES.add("11120");
-        NODES.add("11124");
+        NODES = new LinkedHashMap<>(5);
+        NODES.put("11108", 1);
+        NODES.put("11112", 2);
+        NODES.put("11116", 3);
+        NODES.put("11120", 4);
+        NODES.put("11124", 5);
     }
 
     private Uri uri;
@@ -58,8 +59,16 @@ public class GroupMessenger extends Application {
         return SERVER_PORT;
     }
 
-    public static List<String> nodes() {
-        return NODES;
+    public static Set<String> nodes() {
+        return NODES.keySet();
+    }
+
+    public static int pid(String port) {
+        return NODES.get(port);
+    }
+
+    public int myPid() {
+        return NODES.get(myPort);
     }
 
     public Ordering ordering() {

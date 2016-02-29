@@ -9,16 +9,23 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 
 class ClientTask extends AsyncTask<Payload, Void, Void> {
     private static final String TAG = ClientTask.class.getName();
     private final GroupMessenger messenger;
-    private final List<String> toNodes;
+    private final Collection<String> toNodes;
 
-    public ClientTask(GroupMessenger messenger, List<String> toNodes) {
+    public ClientTask(GroupMessenger messenger, Collection<String> toNodes) {
         this.messenger = messenger;
         this.toNodes = toNodes;
+    }
+
+    public ClientTask(GroupMessenger messenger, String toNode) {
+        this.messenger = messenger;
+        this.toNodes = new HashSet<>(1);
+        this.toNodes.add(toNode);
     }
 
 

@@ -10,11 +10,13 @@ public class Payload implements Serializable {
     private Type type;
     private String fromNode; // port number
 
-    private UUID id;
+    private int sequence;
     private String message;
 
-    private int proposedSequence;
-    private int agreedSequence;
+    private float proposedSequence;
+    private float agreedSequence;
+    private int agreedNode;
+    private UUID id;
 
     public enum Type {
         INITIAL_MESSAGE,
@@ -22,31 +24,26 @@ public class Payload implements Serializable {
         SEQUENCE_AGREEMENT
     }
 
-    public static Payload newMessage(String message, String fromNode) {
+    public static Payload newMessage(String message, String fromNode, int sequence) {
         Payload payload = new Payload();
         payload.type = Type.INITIAL_MESSAGE;
         payload.message = message;
         payload.fromNode = fromNode;
+        payload.sequence = sequence;
         payload.id = UUID.randomUUID();
         return payload;
     }
 
-    public static Payload newProposal(UUID id, int proposedSequence, String fromNode) {
-        Payload payload = new Payload();
-        payload.type = Type.SEQUENCE_PROPOSAL;
-        payload.fromNode = fromNode;
-        payload.id = id;
-        payload.proposedSequence = proposedSequence;
-        return payload;
+    public void toProposal(float proposedSequence, String fromNode) {
+        this.type = Type.SEQUENCE_PROPOSAL;
+        this.fromNode = fromNode;
+        this.proposedSequence = proposedSequence;
     }
 
-    public static Payload newAgreement(UUID id, int agreedSequence, String fromNode) {
-        Payload payload = new Payload();
-        payload.type = Type.SEQUENCE_AGREEMENT;
-        payload.id = id;
-        payload.fromNode = fromNode;
-        payload.agreedSequence = agreedSequence;
-        return payload;
+    public void toAgreement(String fromNode, float agreedSequence) {
+        this.type = Type.SEQUENCE_AGREEMENT;
+        this.fromNode = fromNode;
+        this.agreedSequence = agreedSequence;
     }
 
     public Type getType() {
@@ -65,12 +62,12 @@ public class Payload implements Serializable {
         this.fromNode = fromNode;
     }
 
-    public UUID getId() {
-        return id;
+    public int getSequence() {
+        return sequence;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setSequence(int sequence) {
+        this.sequence = sequence;
     }
 
     public String getMessage() {
@@ -81,20 +78,36 @@ public class Payload implements Serializable {
         this.message = message;
     }
 
-    public int getProposedSequence() {
+    public float getProposedSequence() {
         return proposedSequence;
     }
 
-    public void setProposedSequence(int proposedSequence) {
+    public void setProposedSequence(float proposedSequence) {
         this.proposedSequence = proposedSequence;
     }
 
-    public int getAgreedSequence() {
+    public float getAgreedSequence() {
         return agreedSequence;
     }
 
-    public void setAgreedSequence(int agreedSequence) {
+    public void setAgreedSequence(float agreedSequence) {
         this.agreedSequence = agreedSequence;
+    }
+
+    public int getAgreedNode() {
+        return agreedNode;
+    }
+
+    public void setAgreedNode(int agreedNode) {
+        this.agreedNode = agreedNode;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     @Override
@@ -102,17 +115,19 @@ public class Payload implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Payload payload = (Payload) o;
-        return Objects.equals(proposedSequence, payload.proposedSequence) &&
+        return Objects.equals(sequence, payload.sequence) &&
+                Objects.equals(proposedSequence, payload.proposedSequence) &&
                 Objects.equals(agreedSequence, payload.agreedSequence) &&
+                Objects.equals(agreedNode, payload.agreedNode) &&
                 Objects.equals(type, payload.type) &&
                 Objects.equals(fromNode, payload.fromNode) &&
-                Objects.equals(id, payload.id) &&
-                Objects.equals(message, payload.message);
+                Objects.equals(message, payload.message) &&
+                Objects.equals(id, payload.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, fromNode, id, message, proposedSequence, agreedSequence);
+        return Objects.hash(type, fromNode, sequence, message, proposedSequence, agreedSequence, agreedNode, id);
     }
 
     @Override
@@ -120,10 +135,12 @@ public class Payload implements Serializable {
         return "Payload{" +
                 "type=" + type +
                 ", fromNode='" + fromNode + '\'' +
-                ", id=" + id +
+                ", sequence=" + sequence +
                 ", message='" + message + '\'' +
                 ", proposedSequence=" + proposedSequence +
                 ", agreedSequence=" + agreedSequence +
+                ", agreedNode=" + agreedNode +
+                ", id=" + id +
                 '}';
     }
 }

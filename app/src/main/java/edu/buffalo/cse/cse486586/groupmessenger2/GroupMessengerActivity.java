@@ -69,7 +69,7 @@ public class GroupMessengerActivity extends Activity {
                 String msg = editText.getText().toString() + "\n";
                 editText.setText("");
                 new ClientTask(messenger, GroupMessenger.nodes()).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
-                        Payload.newMessage(msg, messenger.myPort()));
+                        Payload.newMessage(msg, messenger.myPort(), messenger.ordering().nextSequence()));
             }
         });
 
