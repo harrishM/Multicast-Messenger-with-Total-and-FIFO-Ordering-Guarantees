@@ -18,6 +18,7 @@ public class Payload implements Serializable {
     private int agreedNode;
     private UUID id;
 
+
     public enum Type {
         INITIAL_MESSAGE,
         SEQUENCE_PROPOSAL,
@@ -31,6 +32,15 @@ public class Payload implements Serializable {
         payload.fromNode = fromNode;
         payload.sequence = sequence;
         payload.id = UUID.randomUUID();
+        return payload;
+    }
+
+    public static Payload newAgreement(UUID id, String fromNode, float agreedSequence) {
+        Payload payload = new Payload();
+        payload.type = Type.SEQUENCE_AGREEMENT;
+        payload.fromNode = fromNode;
+        payload.agreedSequence = agreedSequence;
+        payload.id = id;
         return payload;
     }
 

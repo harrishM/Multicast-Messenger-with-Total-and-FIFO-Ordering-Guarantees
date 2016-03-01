@@ -24,6 +24,8 @@ import android.util.Log;
  * @author stevko
  */
 public class GroupMessengerProvider extends ContentProvider {
+    private static final String TAG = GroupMessengerProvider.class.getName();
+
     GroupMessengerDB db;
 
     @Override
@@ -55,7 +57,7 @@ public class GroupMessengerProvider extends ContentProvider {
          * internal storage option that we used in PA1. If you want to use that option, please
          * take a look at the code for PA1.
          */
-        Log.v("insert", values.toString());
+        Log.v(TAG, "Inserting " + values.toString());
         db.insert(values);
         return uri;
     }
@@ -87,6 +89,6 @@ public class GroupMessengerProvider extends ContentProvider {
          * http://developer.android.com/reference/android/database/MatrixCursor.html
          */
         Log.v("query", selection);
-        return db.query(projection, "key = ?", new String[] {selection}, sortOrder);
+        return db.query(projection, "key = ?", new String[]{selection}, sortOrder);
     }
 }

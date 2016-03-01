@@ -41,7 +41,8 @@ public class GroupMessengerActivity extends Activity {
         tv.setMovementMethod(new ScrollingMovementMethod());
 
         try {
-            ServerSocket serverSocket = new ServerSocket(GroupMessenger.serverPort());
+            ServerSocket serverSocket = new ServerSocket(Nodes.server());
+            serverSocket.setReuseAddress(true);
             new ServerTask(tv, messenger).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, serverSocket);
         } catch (IOException e) {
             Log.e(TAG, "Can't create a ServerSocket");
@@ -68,7 +69,7 @@ public class GroupMessengerActivity extends Activity {
             public void onClick(View v) {
                 String msg = editText.getText().toString() + "\n";
                 editText.setText("");
-                new ClientTask(messenger, GroupMessenger.nodes()).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
+                new ClientTask(messenger, Nodes.liveNodes()).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,
                         Payload.newMessage(msg, messenger.myPort(), messenger.ordering().nextSequence()));
             }
         });

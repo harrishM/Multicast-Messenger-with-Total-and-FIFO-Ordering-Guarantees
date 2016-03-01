@@ -6,7 +6,7 @@ import java.util.UUID;
 public class BufferedMessage implements Comparable<BufferedMessage> {
     private float sequence;
     private UUID id;
-    private int fromPid;
+    private String fromNode;
     private int agreedPid;
     private String message;
     private Status status = Status.UNDELIVERABLE;
@@ -15,10 +15,10 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         DELIVERABLE, UNDELIVERABLE
     }
 
-    public BufferedMessage(float sequence, UUID id, int fromPid, String message, int agreedPid) {
+    public BufferedMessage(float sequence, UUID id, String fromNode, String message, int agreedPid) {
         this.sequence = sequence;
         this.id = id;
-        this.fromPid = fromPid;
+        this.fromNode = fromNode;
         this.agreedPid = agreedPid;
         this.message = message;
     }
@@ -78,12 +78,12 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         this.status = status;
     }
 
-    public int getFromPid() {
-        return fromPid;
+    public String getFromNode() {
+        return fromNode;
     }
 
-    public void setFromPid(int fromPid) {
-        this.fromPid = fromPid;
+    public void setFromNode(String fromNode) {
+        this.fromNode = fromNode;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         BufferedMessage that = (BufferedMessage) o;
         return Objects.equals(sequence, that.sequence) &&
                 Objects.equals(id, that.id) &&
-                Objects.equals(fromPid, that.fromPid) &&
+                Objects.equals(fromNode, that.fromNode) &&
                 Objects.equals(agreedPid, that.agreedPid) &&
                 Objects.equals(message, that.message) &&
                 Objects.equals(status, that.status);
@@ -101,7 +101,7 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(sequence, id, fromPid, agreedPid, message, status);
+        return Objects.hash(sequence, id, fromNode, agreedPid, message, status);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class BufferedMessage implements Comparable<BufferedMessage> {
         return "BufferedMessage{" +
                 "sequence=" + sequence +
                 ", id=" + id +
-                ", fromPid=" + fromPid +
+                ", fromNode=" + fromNode +
                 ", agreedPid=" + agreedPid +
                 ", message='" + message + '\'' +
                 ", status=" + status +

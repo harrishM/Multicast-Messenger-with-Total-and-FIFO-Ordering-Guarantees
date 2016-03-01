@@ -3,16 +3,15 @@ package edu.buffalo.cse.cse486586.groupmessenger2;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
-class ClientTask extends AsyncTask<Payload, Void, Void> {
+class ClientTask extends AsyncTask<Payload, Void, Set<ClientTask.Result>> {
     private static final String TAG = ClientTask.class.getName();
     private final GroupMessenger messenger;
     private final Collection<String> toNodes;
@@ -30,8 +29,8 @@ class ClientTask extends AsyncTask<Payload, Void, Void> {
 
 
     @Override
-    protected Void doInBackground(Payload... payloads) {
-
+    protected Set<ClientTask.Result> doInBackground(Payload... payloads) {
+        Set<Result> results = new HashSet<>();
         for (String node : toNodes) {
             try (Socket socket = new Socket(
                     InetAddress.getByAddress(new byte[]{10, 0, 2, 2}),
@@ -41,15 +40,36 @@ class ClientTask extends AsyncTask<Payload, Void, Void> {
                 ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
                 objectOutputStream.writeObject(payloads[0]);
                 objectOutputStream.flush();
-            } catch (SocketException e) {
-                Log.e(TAG, "ClientTask socket SocketException" + " while sending to " + node);
-                Log.e(TAG, e.getMessage());
-                messenger.ordering().markOffline(node);
-            } catch (IOException e) {
-                Log.e(TAG, "ClientTask socket IOException" + " while sending to " + node);
-                Log.e(TAG, e.getMessage());
+                results.add(new Result(true, node));
+            } catch (Exception e) {
+                results.add(new Result(false, node));
+                Log.e(TAG, "ClientTask socket Exception" + " while sending to " + node);
+//                Log.e(TAG, e.getMessage());
             }
         }
-        return null;
+        return results;
+    }
+
+    @Override
+    protected void onPostExecute(Set<ClientTask.Result> results) {
+        for (Result r : results) {
+            if (!r.success) {
+                Nodes.markOffline(r.node);
+            }
+        }
+    }
+
+    public static class Result {
+        private static final Result EMPTY_RESULT = new Result();
+        private boolean success;
+        private String node;
+
+        public Result(boolean success, String node) {
+            this.success = success;
+            this.node = node;
+        }
+
+        public Result() {
+        }
     }
 }
